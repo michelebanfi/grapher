@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- http://localhost:5500/math.html?min=-20&max=20&step=0.1#sin(x)*x&cos(x)&4*sin(x)+5*cos(x/2) -->
+
+<head>
+    <meta charset="utf-8">
+    <title>Plot Math</title>
+    <script src="https://unpkg.com/mathjs@11.5.0/lib/browser/math.js"></script>
+
+    <script src="https://cdn.plot.ly/plotly-1.35.2.min.js"></script>
+
+    <style>
+        input[type=text] {
+            width: 300px;
+        }
+
+        input {
+            padding: 6px;
+        }
+
+        body,
+        html,
+        input {
+            font-family: sans-serif;
+            font-size: 11pt;
+
+        }
+
+        form {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- <form id="form" style="position: absolute; z-index: 2;">
+        <label for="eq">Enter an equation:</label>
+        <input type="text" id="eq" value="4 * sin(x) + 5 * cos(x/2)" />
+        <input type="submit" value="Draw" />
+    </form> -->
+
+    <div id="plot" style="height: 100vh;"></div>
+
+    <script>
+        let expression = NaN
+        const colors = ['#ff6384', '#36a2eb', '#cc65fe', '#ffce56']
+        function searchToObject() {
+            var pairs = window.location.search.substring(1).split("&"),
+                obj = {},
+                pair,
+                i;
+
+            for (i in pairs) {
+                if (pairs[i] === "") continue;
+
+                pair = pairs[i].split("=");
+                obj[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
+            }
+
+            return obj;
+        }
+        function setExprFromHash() {
+            expression = location.hash.substring(1).split('&')
+            // let x = {
+            //     min: -20,
+            //     max: 20,
+            //     step: 0.3
+            // }
+            // console.log(JSON.stringify(x))
+            config = searchToObject()
+            if (expression.length < 5) draw()
+        }
+        window.addEventListener('hashchange', setExprFromHash)
+        setExprFromHash()
+
+        draw()
+
+        function draw() {
+            try {
+                // compile the expression once
+                //expression = document.getElementById('eq').value
+                let expr = []
+                expression.map(item => expr.push(math.compile(item)))
+                //const expr = math.compile(expression)
+
+                // evaluate the expression repeatedly for different values of x
+                const xValues = math.range(config.min, config.max, config.step).toArray()
+                let yValues = []
+                expr.map(item => yValues.push(xValues.map(function (x) {
+                    console.log(x)
+                    return item.evaluate({ x: x })
+                })))
+                // const yValues = xValues.map(function (x) {
+                //     return expr.evaluate({ x: x })
+                // })
+                let traces = []
+                yValues.map((item, i) => traces.push({
+                    x: xValues,
+                    y: item,
+                    mode: 'lines',
+                    line: {
+                        color: colors[i],
+                        width: 3,
+                        shape: 'spline'
+                    },
+                    connectgaps: false
+                }))
+
+                // render the plot using plotly
+                // const trace1 = {
+                //     x: xValues,
+                //     y: yValues,
+                //     mode: 'lines',
+                //     line: {
+                //         color: '#ff6384',
+                //         width: 3,
+                //         shape: 'spline'
+                //     }
+                // }
+                const data = traces
+                var layout = {
+                    title: expression,
+                    showlegend: false
+                };
+
+                Plotly.newPlot('plot', data, layout, { displayModeBar: false })
+            }
+            catch (err) {
+                console.error(err)
+                alert(err)
+            }
+        }
+
+        document.getElementById('form').onsubmit = function (event) {
+            event.preventDefault()
+            draw()
+        }
+
+        draw()
+    </script>
+
+</body>
+
+</html>
